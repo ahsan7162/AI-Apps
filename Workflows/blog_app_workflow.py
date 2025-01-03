@@ -1,6 +1,9 @@
 from llama_index.core.workflow import (Workflow, StartEvent, StopEvent, step, InputRequiredEvent,
-                                       HumanResponseEvent)
+                                       HumanResponseEvent, Event)
 
+class BlogWritingEvent(Event):
+    def __init__(self, blog_type: str):
+        self.blog_type = blog_type
 
 class BlogWriterWorkflow(Workflow):
     @step
@@ -12,8 +15,7 @@ class BlogWriterWorkflow(Workflow):
     async def validate_input(self, ev: HumanResponseEvent) -> InputRequiredEvent | HumanResponseEvent:
         user_input = ev.response
         if self.is_valid_input(user_input):
-            self.save_property(user_input)
-            return HumanResponseEvent(response="Property saved successfully.")
+            return BlogWritingEvent(blog_type=user_input)
         else:
             return InputRequiredEvent(prefix="Invalid input. Please provide the correct property:")
 
@@ -26,9 +28,9 @@ class BlogWriterWorkflow(Workflow):
         self.property = property_value
 
     @step
-    async def write_blog(self, ev: HumanResponseEvent) -> InputRequiredEvent:
+    async def write_blog(self, ev: BlogWritingEvent) -> InputRequiredEvent:
         # Write the blog using the saved property
-        blog_content = f"This blog is about {self.property}."
+        blog_content = f"This blog is about {ev.blog_type}."
         print(blog_content)
         return InputRequiredEvent()
 
